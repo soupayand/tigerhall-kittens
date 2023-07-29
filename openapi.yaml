@@ -1,0 +1,208 @@
+---
+openapi: 3.0.0
+info:
+  title: Tigerhall Kittens
+  description: This specification defines endpoints used to track animal(tiger) sightings around the world
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: soupayand@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/soupayand/TigerhallKittens/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/v1
+paths:
+  /user:
+    post:
+      summary: Create user
+      description: Creates a new user
+      operationId: createUser
+      requestBody:
+        description: Created user object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        default:
+          description: successful operation
+  /user/login:
+    post:
+      summary: Logs user into the system
+      operationId: loginUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/user_login_body'
+      responses:
+        "200":
+          description: successful operation
+          headers:
+            X-Expires-After:
+              description: date in UTC when token expires
+              style: simple
+              explode: false
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid username/password supplied
+  /animal:
+    get:
+      summary: "List of all animals, by default, tiger"
+      operationId: getAnimals
+      parameters:
+      - name: offset
+        in: query
+        description: Offset value for the page
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int32
+      - name: limit
+        in: query
+        description: The number of items per page.
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int32
+      - name: type
+        in: query
+        description: The type of animal e.g tiger
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          default: tiger
+      - name: name
+        in: query
+        description: The name of the particular animal
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: List of the animals sorted by last seen timestamp
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Animal'
+    post:
+      summary: Get user by user name
+      operationId: createAnimal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Animal'
+      responses:
+        "200":
+          description: Successful animal record creation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Animal'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        "403":
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      security:
+      - BearerAuth: []
+components:
+  schemas:
+    User:
+      required:
+      - email
+      - password
+      - username
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Auto-incrementing primary key
+          format: int64
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+    Animal:
+      required:
+      - latitude
+      - longitude
+      - name
+      - seen
+      - type
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Auto-incrementing primary key
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+          default: tiger
+        variant:
+          type: string
+          default: bengal tiger
+        seen:
+          type: string
+          format: date-time
+          example: 2023-07-28T15:30:45Z
+        latitude:
+          maximum: 90
+          minimum: -90
+          type: number
+          format: float
+        longitude:
+          maximum: 180
+          minimum: -180
+          type: number
+          format: float
+    ErrorMessage:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A brief description of the error that can be displayed and understood by the front-end.
+    user_login_body:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

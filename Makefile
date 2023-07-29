@@ -14,5 +14,5 @@ migratedbdown:
 	migrate -path database/migration -database "postgresql://root:secret@localhost:5432/tigerhall_kittens?sslmode=disable" -verbose down
 
 
-.PHONY: dropdb	createdb	migratedbup	migratedbdown
+.PHONY: postgres	dropdb	createdb	migratedbup	migratedbdown
 
