@@ -31,7 +31,10 @@ func LogError(err error) {
 	if errorLogger != nil {
 		_, file, line, _ := runtime.Caller(1)
 		filename := filepath.Base(file)
-		errorLogger.Output(2, fmt.Sprintf("[ERROR] %s:%d %v", filename, line, err.Error()))
+		err := errorLogger.Output(2, fmt.Sprintf("[ERROR] %s:%d %v", filename, line, err.Error()))
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -39,6 +42,9 @@ func LogInfo(v ...any) {
 	if infoLogger != nil {
 		_, file, line, _ := runtime.Caller(1)
 		filename := filepath.Base(file)
-		infoLogger.Output(2, fmt.Sprintf("[INFO] %s:%d %v", filename, line, v))
+		err := infoLogger.Output(2, fmt.Sprintf("[INFO] %s:%d %v", filename, line, v))
+		if err != nil {
+			return
+		}
 	}
 }
