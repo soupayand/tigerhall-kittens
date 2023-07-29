@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"tigerhall-kittens/controller"
+	"tigerhall-kittens/database"
 	"tigerhall-kittens/logger"
 )
 
@@ -24,6 +26,13 @@ func main() {
 		return
 	}
 	defer pool.Close()
+
+	user := database.NewUserDB(pool)
+	userController := controller.NewUserController(user)
+
+	//Register handlers/controllers
+	http.HandleFunc("/user", userController.CreateUserHandler)
+
 	logger.LogError(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 	logger.LogInfo("Server listening at port ", os.Getenv("PORT"))
 	logger.LogInfo("Server exited and released port ", os.Getenv("PORT"))
