@@ -28,8 +28,24 @@ paths:
               $ref: '#/components/schemas/User'
         required: true
       responses:
-        default:
-          description: successful operation
+        "200":
+          description: New user created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        "403":
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
   /user/login:
     post:
       summary: Logs user into the system
@@ -53,7 +69,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/inline_response_200_1'
         "400":
           description: Invalid username/password supplied
   /animal:
@@ -200,12 +216,25 @@ components:
         error:
           type: string
           description: A brief description of the error that can be displayed and understood by the front-end.
+    inline_response_200:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        username:
+          type: string
     user_login_body:
       type: object
       properties:
         username:
           type: string
         password:
+          type: string
+    inline_response_200_1:
+      type: object
+      properties:
+        token:
           type: string
   securitySchemes:
     BearerAuth:
