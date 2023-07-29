@@ -32,6 +32,7 @@ func main() {
 
 	//Register handlers/controllers
 	http.HandleFunc("/user", userController.CreateUserHandler)
+	http.HandleFunc("/user/login", userController.LoginHandler)
 
 	logger.LogError(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 	logger.LogInfo("Server listening at port ", os.Getenv("PORT"))

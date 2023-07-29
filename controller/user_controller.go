@@ -2,11 +2,16 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"os"
 	"tigerhall-kittens/database"
 	"tigerhall-kittens/logger"
 	"tigerhall-kittens/model"
+	"time"
 )
 
 type UserController struct {
@@ -50,6 +55,74 @@ func (uc *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reque
 		"userId":   userResponse.ID,
 	}
 	writeJSONResponse(w, response, http.StatusOK)
+}
+
+func (uc *UserController) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var loginReq struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	logger.LogInfo("Username : ", loginReq.Username, " tried to login")
+	err := json.NewDecoder(r.Body).Decode(&loginReq)
+	if err != nil {
+		errRes := ErrorResponse{Error: "Failed to parse login request"}
+		writeJSONResponse(w, errRes, http.StatusBadRequest)
+		return
+	}
+	user, err := authenticateUser(loginReq.Username, loginReq.Password, uc)
+	if err != nil {
+		errRes := ErrorResponse{Error: "Invalid credentials"}
+		writeJSONResponse(w, errRes, http.StatusUnauthorized)
+		return
+	}
+	token, err := generateJWT(user)
+	if err != nil {
+		errRes := ErrorResponse{Error: "Failed to generate JWT"}
+		writeJSONResponse(w, errRes, http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{
+		"token": token,
+	}
+	json.NewEncoder(w).Encode(response)
+	logger.LogInfo(loginReq.Username, " successfully logged in")
+}
+
+func authenticateUser(username, password string, uc *UserController) (*model.User, error) {
+	user, err := uc.user.GetUserByUsername(username)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return nil, fmt.Errorf("invalid password")
+	}
+	return user, nil
+}
+
+func generateJWT(user *model.User) (string, error) {
+	claims := model.Claims{
+		UserID:   user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		logger.LogError(errors.New("JWT_SECRET missing from secret/env file"))
+		return "", errors.New("JWT_SECRET missing from secret/env file")
+	}
+	signedToken, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		logger.LogError(err)
+		return "", err
+	}
+
+	return signedToken, nil
 }
 
 func writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {

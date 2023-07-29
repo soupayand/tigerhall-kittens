@@ -11,6 +11,7 @@ import (
 
 type IUser interface {
 	CreateUser(user *model.User) (*model.User, error)
+	GetUserByUsername(username string) (*model.User, error)
 }
 
 type UserDB struct {
@@ -37,7 +38,7 @@ func (db *UserDB) CreateUser(user *model.User) (*model.User, error) {
 	}
 	logger.LogInfo("User with username", user.Username, " created")
 	return &model.User{
-		ID:       id,
+		ID:       int64(id),
 		Username: user.Username,
 	}, nil
 }
@@ -48,4 +49,25 @@ func hashPassword(password string) (string, error) {
 		return "", fmt.Errorf("%w", err)
 	}
 	return string(hashedPassword), nil
+}
+
+func (db *UserDB) GetUserByUsername(username string) (*model.User, error) {
+	sqlQuery := `SELECT id, username, password, email FROM "user" where username = $1`
+	rows, err := db.pool.Query(context.Background(), sqlQuery, username)
+	if err != nil {
+		logger.LogError(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var data model.User
+	for rows.Next() {
+		err = rows.Scan(
+			&data.ID,
+			&data.Username,
+			&data.Password,
+			&data.Email,
+		)
+	}
+	return &data, nil
 }
