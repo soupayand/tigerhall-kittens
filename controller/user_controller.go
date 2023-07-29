@@ -32,7 +32,7 @@ type ErrorResponse struct {
 func (uc *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		errRes := ErrorResponse{Error: "Method not allowed"}
-		writeJSONResponse(w, errRes, http.StatusMethodNotAllowed)
+		WriteJSONResponse(w, errRes, http.StatusMethodNotAllowed)
 		return
 	}
 	decoder := json.NewDecoder(r.Body)
@@ -40,21 +40,21 @@ func (uc *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reque
 	err := decoder.Decode(&user)
 	if err != nil {
 		errRes := ErrorResponse{Error: "Invalid request payload"}
-		writeJSONResponse(w, errRes, http.StatusBadRequest)
+		WriteJSONResponse(w, errRes, http.StatusBadRequest)
 		return
 	}
 	userResponse, err := uc.user.CreateUser(&user)
 	if err != nil {
 		logger.LogError(err)
 		errRes := ErrorResponse{Error: fmt.Sprintf("Failed to create user")}
-		writeJSONResponse(w, errRes, http.StatusInternalServerError)
+		WriteJSONResponse(w, errRes, http.StatusInternalServerError)
 		return
 	}
 	response := map[string]interface{}{
 		"username": userResponse.Username,
 		"userId":   userResponse.ID,
 	}
-	writeJSONResponse(w, response, http.StatusOK)
+	WriteJSONResponse(w, response, http.StatusOK)
 }
 
 func (uc *UserController) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,19 +66,19 @@ func (uc *UserController) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&loginReq)
 	if err != nil {
 		errRes := ErrorResponse{Error: "Failed to parse login request"}
-		writeJSONResponse(w, errRes, http.StatusBadRequest)
+		WriteJSONResponse(w, errRes, http.StatusBadRequest)
 		return
 	}
 	user, err := authenticateUser(loginReq.Username, loginReq.Password, uc)
 	if err != nil {
 		errRes := ErrorResponse{Error: "Invalid credentials"}
-		writeJSONResponse(w, errRes, http.StatusUnauthorized)
+		WriteJSONResponse(w, errRes, http.StatusUnauthorized)
 		return
 	}
 	token, err := generateJWT(user)
 	if err != nil {
 		errRes := ErrorResponse{Error: "Failed to generate JWT"}
-		writeJSONResponse(w, errRes, http.StatusInternalServerError)
+		WriteJSONResponse(w, errRes, http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -125,7 +125,7 @@ func generateJWT(user *model.User) (string, error) {
 	return signedToken, nil
 }
 
-func writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
+func WriteJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	err := json.NewEncoder(w).Encode(data)
