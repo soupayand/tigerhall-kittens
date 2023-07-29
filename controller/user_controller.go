@@ -62,13 +62,13 @@ func (uc *UserController) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	logger.LogInfo("Username : ", loginReq.Username, " tried to login")
 	err := json.NewDecoder(r.Body).Decode(&loginReq)
 	if err != nil {
 		errRes := ErrorResponse{Error: "Failed to parse login request"}
 		WriteJSONResponse(w, errRes, http.StatusBadRequest)
 		return
 	}
+	logger.LogInfo("Username : ", loginReq.Username, " tried to login")
 	user, err := authenticateUser(loginReq.Username, loginReq.Password, uc)
 	if err != nil {
 		errRes := ErrorResponse{Error: "Invalid credentials"}

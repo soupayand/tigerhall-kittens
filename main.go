@@ -11,6 +11,7 @@ import (
 	"tigerhall-kittens/controller"
 	"tigerhall-kittens/database"
 	"tigerhall-kittens/logger"
+	"tigerhall-kittens/middleware"
 )
 
 func main() {
@@ -27,12 +28,21 @@ func main() {
 	}
 	defer pool.Close()
 
+	//DAO
 	user := database.NewUserDB(pool)
+	animal := database.NewAnimalDB(pool)
+
+	//Controllers
 	userController := controller.NewUserController(user)
+	animalController := controller.NewAnimalController(animal)
+
+	//Middlewares
+	jwlMiddleWare := middleware.JWTMiddleware
 
 	//Register handlers/controllers
 	http.HandleFunc("/user", userController.CreateUserHandler)
 	http.HandleFunc("/user/login", userController.LoginHandler)
+	http.HandleFunc("/animal", jwlMiddleWare(animalController.CreateAnimalHandler))
 
 	logger.LogError(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 	logger.LogInfo("Server listening at port ", os.Getenv("PORT"))
