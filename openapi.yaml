@@ -105,6 +105,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Animal'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
     post:
       summary: Get user by user name
       operationId: createAnimal
