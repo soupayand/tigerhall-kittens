@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"tigerhall-kittens/model"
-	"time"
 )
 
 func TestCreateAnimal(t *testing.T) {
@@ -24,7 +23,6 @@ func TestCreateAnimal(t *testing.T) {
 		Description: "testdescription",
 	}
 	lastSeenStr := "2023-07-30T12:34:56Z"
-	lastSeenTime, err := time.Parse(time.RFC3339, lastSeenStr)
 	if err != nil {
 		fmt.Printf("Error while parsing the date-time string: %v", err)
 		return
@@ -34,7 +32,7 @@ func TestCreateAnimal(t *testing.T) {
 			Latitude:  51.503399,
 			Longitude: -0.119519,
 		},
-		LastSeen: lastSeenTime,
+		LastSeen: lastSeenStr,
 		Reporter: model.User{
 			ID: 0,
 		},
