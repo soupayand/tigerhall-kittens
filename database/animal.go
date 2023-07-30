@@ -2,14 +2,16 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"tigerhall-kittens/logger"
 	"tigerhall-kittens/model"
 )
 
 type IAnimal interface {
-	CreateAnimal(animal *model.Animal) (*model.Animal, error)
+	CreateAnimal(animal *model.Animal, sighting *model.Sighting) (*model.Animal, error)
 	ListAnimalInfo(name string, animalType string, limit string, offset string) ([]model.Animal, error)
 }
 
@@ -23,16 +25,63 @@ func NewAnimalDB(pool *pgxpool.Pool) *AnimalDB {
 	}
 }
 
-func (db *AnimalDB) CreateAnimal(animal *model.Animal) (*model.Animal, error) {
-	var id int
-	err := db.pool.QueryRow(context.Background(),
-		`INSERT INTO animal (name, type, variant, date_of_birth, description) VALUES($1, $2, $3, TO_DATE($4, 'YYYY-MM-DD'), $5) RETURNING id`,
+func (db *AnimalDB) CreateAnimal(animal *model.Animal, sighting *model.Sighting) (*model.Animal, error) {
+	ctx := context.Background()
+	tx, err := db.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to begin transaction")
+	}
+
+	if err = createAnimalWithTransaction(ctx, tx, animal); err != nil {
+		rollbackErr := tx.Rollback(ctx)
+		if rollbackErr != nil {
+			logger.LogError(errors.New("Error rolling back database transaction"))
+		}
+		return nil, err
+	}
+
+	if err = createSightingWithTransaction(ctx, tx, animal, sighting); err != nil {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return nil, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("Failed to commit transaction")
+	}
+	return animal, nil
+}
+
+func createAnimalWithTransaction(ctx context.Context, tx pgx.Tx, animal *model.Animal) error {
+	var id int64
+	err := tx.QueryRow(ctx,
+		`INSERT INTO animal (name, type, variant, date_of_birth, description)
+         VALUES($1, $2, $3, TO_DATE($4, 'YYYY-MM-DD'), $5) RETURNING id`,
 		animal.Name, animal.Type, animal.Variant, animal.DateOfBirth, animal.Description).Scan(&id)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		logger.LogError(err)
+		return errors.New("An animal with same name, type or variant already exists")
 	}
-	animal.ID = int64(id)
-	return animal, nil
+	animal.ID = id
+	return nil
+}
+
+func createSightingWithTransaction(ctx context.Context, tx pgx.Tx, animal *model.Animal, sighting *model.Sighting) error {
+	var id int64
+	geoPoint := fmt.Sprintf("POINT(%f %f)", sighting.LastLocation.Longitude, sighting.LastLocation.Latitude)
+	err := tx.QueryRow(ctx,
+		`INSERT INTO sighting (animal_id, reporter, last_location, last_seen)
+         VALUES($1, $2, ST_GeographyFromText($3), $4) RETURNING id`,
+		animal.ID,
+		sighting.Reporter.ID,
+		geoPoint,
+		sighting.LastSeen).Scan(&id)
+	if err != nil {
+		return err
+	}
+	sighting.ID = id
+	return nil
 }
 
 func (db *AnimalDB) ListAnimalInfo(name string, animalType string, limit string, offset string) ([]model.Animal, error) {

@@ -2,14 +2,20 @@ package middleware
 
 import (
 	"context"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/pkg/errors"
 	"net/http"
 	"os"
+	"strings"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 	"tigerhall-kittens/controller"
 	"tigerhall-kittens/logger"
-	"tigerhall-kittens/model"
 )
+
+type CustomClaims struct {
+	UserID int64 `json:"user_id"`
+	jwt.StandardClaims
+}
 
 func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -19,8 +25,8 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			controller.WriteJSONResponse(w, errRes, http.StatusUnauthorized)
 			return
 		}
-
-		token, err := jwt.ParseWithClaims(tokenString, &model.Claims{}, func(token *jwt.Token) (interface{}, error) {
+		tokenString = strings.Replace(tokenString, "Bearer ", "", 1)
+		token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 			jwtSecret := os.Getenv("JWT_SECRET")
 			if jwtSecret == "" {
 				logger.LogError(errors.New("JWT_SECRET missing from secret/env file"))
@@ -28,18 +34,16 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			}
 			return []byte(jwtSecret), nil
 		})
-
-		if err != nil {
+		if err != nil || !token.Valid {
 			errRes := controller.ErrorResponse{Error: "Invalid JWT token"}
 			controller.WriteJSONResponse(w, errRes, http.StatusUnauthorized)
 			return
 		}
-
-		if claims, ok := token.Claims.(*model.Claims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), "user", claims)
+		if claims, ok := token.Claims.(*CustomClaims); ok {
+			ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			errRes := controller.ErrorResponse{Error: "Invalid JWT token"}
+			errRes := controller.ErrorResponse{Error: "Invalid JWT claims"}
 			controller.WriteJSONResponse(w, errRes, http.StatusUnauthorized)
 			return
 		}

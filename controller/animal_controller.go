@@ -26,19 +26,21 @@ func (ac *AnimalController) CreateAnimalHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	decoder := json.NewDecoder(r.Body)
-	var animal model.Animal
-	err := decoder.Decode(&animal)
+	var animalReq model.CreateAnimalRequest
+	err := decoder.Decode(&animalReq)
 	if err != nil {
 		errRes := ErrorResponse{Error: "Invalid request payload"}
 		WriteJSONResponse(w, errRes, http.StatusBadRequest)
 		return
 	}
-	createdAnimal, err := ac.animal.CreateAnimal(&animal)
+	userID, _ := r.Context().Value("user_id").(int64)
+	animalReq.Reporter.ID = userID
+	createdAnimal, err := ac.animal.CreateAnimal(&animalReq.Animal, &animalReq.Sighting)
 	if err != nil {
 		logger.LogError(err)
-		errRes := ErrorResponse{Error: fmt.Sprintf("Failed to create user")}
+		errRes := ErrorResponse{Error: fmt.Sprintf("Failed to create animal : %v", err)}
 		WriteJSONResponse(w, errRes, http.StatusInternalServerError)
 		return
 	}
-	WriteJSONResponse(w, createdAnimal, http.StatusOK)
+	WriteJSONResponse(w, createdAnimal, http.StatusCreated)
 }

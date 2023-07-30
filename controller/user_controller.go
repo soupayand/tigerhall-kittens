@@ -38,7 +38,7 @@ func (uc *UserController) CreateUserHandler(w http.ResponseWriter, r *http.Reque
 	decoder := json.NewDecoder(r.Body)
 	var user model.User
 	err := decoder.Decode(&user)
-	if err != nil {
+	if err != nil || user.Username == "" || user.Email == "" || user.Password == "" {
 		errRes := ErrorResponse{Error: "Invalid request payload"}
 		WriteJSONResponse(w, errRes, http.StatusBadRequest)
 		return

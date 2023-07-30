@@ -31,19 +31,24 @@ type Animal struct {
 type Image struct {
 	FileName string `json:"filename,omitempty"`
 	Type     string `json:"file_type,omitempty"`
-	data     []byte `json:"image_data,omitempty"`
+	Data     []byte `json:"image_data,omitempty"`
 }
 
 type Point struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Latitude  float64 `json:"latitude,omitempty"`
+	Longitude float64 `json:"longitude,omitempty"`
 }
 
 type Sighting struct {
-	ID           int64 `json:"id,omitempty"`
-	Animal       Animal
+	ID           int64  `json:"id,omitempty"`
+	Animal       Animal `json:"animal,omitempty"`
 	Image        Image
-	Reporter     User
-	LastLocation Point
+	Reporter     User      `json:"reported,omitempty"`
+	LastLocation Point     `json:"last_location,omitempty"`
 	LastSeen     time.Time `json:"last_seen"`
+}
+
+type CreateAnimalRequest struct {
+	Animal
+	Sighting
 }
