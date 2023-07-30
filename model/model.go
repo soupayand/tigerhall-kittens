@@ -39,15 +39,20 @@ type Point struct {
 }
 
 type Sighting struct {
-	ID           int64  `json:"id,omitempty"`
-	Animal       Animal `json:"-"`
-	Image        Image  `json:"-"`
-	Reporter     User   `json:"-"`
-	LastLocation Point  `json:"last_location,omitempty"`
-	LastSeen     string `json:"last_seen"`
+	ID                int64  `json:"id,omitempty"`
+	Animal            Animal `json:"-"`
+	Image             Image  `json:"-"`
+	Reporter          User   `json:"-"`
+	Location          Point  `json:"location,omitempty"`
+	SpottingTimestamp string `json:"spotting_timestamp"`
 }
 
-type AnimalSighting struct {
+type AnimalReqResp struct {
+	AnimalID int64 `json:"id,omitempty"`
 	Animal
+	Sighting
+}
+type SightingReqResp struct {
+	AnimalID int64 `json:"animal_id,omitempty"`
 	Sighting
 }

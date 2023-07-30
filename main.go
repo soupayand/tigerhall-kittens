@@ -31,18 +31,20 @@ func main() {
 	//DAO
 	user := database.NewUserDB(pool)
 	animal := database.NewAnimalDB(pool)
+	sighting := database.NewSightingDB(pool)
 
 	//Controllers
 	userController := controller.NewUserController(user)
 	animalController := controller.NewAnimalController(animal)
-
+	sightingController := controller.NewSightingController(sighting)
 	//Middlewares
-	jwlMiddleWare := middleware.JWTMiddleware
+	jwtMiddleWare := middleware.JWTMiddleware
 
 	//Register handlers/controllers
 	http.HandleFunc("/user", userController.CreateUserHandler)
 	http.HandleFunc("/user/login", userController.LoginHandler)
-	http.HandleFunc("/animal", jwlMiddleWare(animalController.AnimalHandler))
+	http.HandleFunc("/animal", jwtMiddleWare(animalController.AnimalHandler))
+	http.HandleFunc("/sighting", jwtMiddleWare(sightingController.SightingHandler))
 
 	logger.LogError(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 	logger.LogInfo("Server listening at port ", os.Getenv("PORT"))

@@ -12,8 +12,8 @@ import (
 )
 
 type IAnimal interface {
-	CreateAnimal(animal *model.Animal, sighting *model.Sighting) (*model.AnimalSighting, error)
-	ListAnimalInfo(name string, animalType string, limit string, offset string) ([]model.AnimalSighting, error)
+	CreateAnimal(animal *model.Animal, sighting *model.Sighting) (*model.AnimalReqResp, error)
+	ListAnimalInfo(name string, animalType string, limit string, offset string) ([]model.AnimalReqResp, error)
 }
 
 type AnimalDB struct {
@@ -26,7 +26,7 @@ func NewAnimalDB(pool *pgxpool.Pool) *AnimalDB {
 	}
 }
 
-func (db *AnimalDB) CreateAnimal(animal *model.Animal, sighting *model.Sighting) (*model.AnimalSighting, error) {
+func (db *AnimalDB) CreateAnimal(animal *model.Animal, sighting *model.Sighting) (*model.AnimalReqResp, error) {
 	ctx := context.Background()
 	tx, err := db.pool.Begin(ctx)
 	if err != nil {
@@ -41,7 +41,7 @@ func (db *AnimalDB) CreateAnimal(animal *model.Animal, sighting *model.Sighting)
 		return nil, err
 	}
 
-	if err = createSightingWithTransaction(ctx, tx, animal, sighting); err != nil {
+	if err = CreateSightingWithTransaction(ctx, tx, animal.ID, sighting); err != nil {
 		err := tx.Rollback(ctx)
 		if err != nil {
 			return nil, err
@@ -51,9 +51,10 @@ func (db *AnimalDB) CreateAnimal(animal *model.Animal, sighting *model.Sighting)
 	if err = tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("Failed to commit transaction")
 	}
-	return &model.AnimalSighting{
-		*animal,
-		*sighting,
+	return &model.AnimalReqResp{
+		AnimalID: animal.ID,
+		Animal:   *animal,
+		Sighting: *sighting,
 	}, nil
 }
 
@@ -71,16 +72,16 @@ func createAnimalWithTransaction(ctx context.Context, tx pgx.Tx, animal *model.A
 	return nil
 }
 
-func createSightingWithTransaction(ctx context.Context, tx pgx.Tx, animal *model.Animal, sighting *model.Sighting) error {
+func CreateSightingWithTransaction(ctx context.Context, tx pgx.Tx, animalId int64, sighting *model.Sighting) error {
 	var id int64
 	err := tx.QueryRow(ctx,
-		`INSERT INTO sighting (animal_id, reporter, last_location, last_seen)
+		`INSERT INTO sighting (animal_id, reporter, location, spotting_timestamp)
          VALUES($1, $2, point($3, $4), $5) RETURNING id`,
-		animal.ID,
+		animalId,
 		sighting.Reporter.ID,
-		sighting.LastLocation.Longitude,
-		sighting.LastLocation.Latitude,
-		sighting.LastSeen).Scan(&id)
+		sighting.Location.Longitude,
+		sighting.Location.Latitude,
+		sighting.SpottingTimestamp).Scan(&id)
 	if err != nil {
 		return err
 	}
@@ -88,9 +89,9 @@ func createSightingWithTransaction(ctx context.Context, tx pgx.Tx, animal *model
 	return nil
 }
 
-func (db *AnimalDB) ListAnimalInfo(name string, animalType string, limit string, offset string) ([]model.AnimalSighting, error) {
+func (db *AnimalDB) ListAnimalInfo(name string, animalType string, limit string, offset string) ([]model.AnimalReqResp, error) {
 	sqlQuery := `
-		SELECT a.name, a.type, a.variant, TO_CHAR(a.date_of_birth, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), a.description, last_location[0] AS longitude, last_location[1] AS latitude,TO_CHAR(s.last_seen, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+		SELECT a.id, a.name, a.type, a.variant, TO_CHAR(a.date_of_birth, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), a.description, location[0] AS longitude, location[1] AS latitude,TO_CHAR(s.spotting_timestamp, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 		FROM animal a
 		JOIN sighting s ON a.id = s.animal_id
 		WHERE 1=1
@@ -107,7 +108,7 @@ func (db *AnimalDB) ListAnimalInfo(name string, animalType string, limit string,
 		sqlQuery += " AND a.type = $" + strconv.Itoa(len(params)+2)
 		params = append(params, animalType)
 	}
-	sqlQuery += " ORDER BY s.last_seen DESC"
+	sqlQuery += " ORDER BY s.spotting_timestamp DESC"
 	sqlQuery += " LIMIT $" + strconv.Itoa(len(params)+1) + " OFFSET $" + strconv.Itoa(len(params)+2)
 	params = append(params, limit, offset)
 	rows, err := db.pool.Query(context.Background(), sqlQuery, params...)
@@ -116,18 +117,19 @@ func (db *AnimalDB) ListAnimalInfo(name string, animalType string, limit string,
 		return nil, err
 	}
 	defer rows.Close()
-	var responseArray []model.AnimalSighting
+	var responseArray []model.AnimalReqResp
 	for rows.Next() {
-		var response model.AnimalSighting
+		var response model.AnimalReqResp
 		err = rows.Scan(
+			&response.AnimalID,
 			&response.Animal.Name,
 			&response.Animal.Type,
 			&response.Animal.Variant,
 			&response.Animal.DateOfBirth,
 			&response.Animal.Description,
-			&response.Sighting.LastLocation.Longitude,
-			&response.Sighting.LastLocation.Latitude,
-			&response.Sighting.LastSeen,
+			&response.Sighting.Location.Longitude,
+			&response.Sighting.Location.Latitude,
+			&response.Sighting.SpottingTimestamp,
 		)
 		if err != nil {
 			logger.LogError(err)

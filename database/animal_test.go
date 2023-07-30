@@ -28,16 +28,16 @@ func TestCreateAnimal(t *testing.T) {
 		return
 	}
 	sighting := &model.Sighting{
-		LastLocation: model.Point{
+		Location: model.Point{
 			Latitude:  51.503399,
 			Longitude: -0.119519,
 		},
-		LastSeen: lastSeenStr,
+		SpottingTimestamp: lastSeenStr,
 		Reporter: model.User{
 			ID: 0,
 		},
 	}
-	var createdAnimal *model.AnimalSighting
+	var createdAnimal *model.AnimalReqResp
 
 	createdAnimal, err = animalDB.CreateAnimal(animal, sighting)
 	if err != nil {

@@ -41,7 +41,7 @@ func (ac *AnimalController) AnimalHandler(w http.ResponseWriter, r *http.Request
 		WriteJSONResponse(w, animals, http.StatusOK)
 	case http.MethodPost:
 		decoder := json.NewDecoder(r.Body)
-		var animalReq model.AnimalSighting
+		var animalReq model.AnimalReqResp
 		err := decoder.Decode(&animalReq)
 		if err != nil {
 			errRes := ErrorResponse{Error: "Invalid request payload"}

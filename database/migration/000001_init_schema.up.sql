@@ -29,8 +29,8 @@ CREATE TABLE "sighting" (
                           "animal_id" bigint NOT NULL,
                           "image_id" bigint,
                           "reporter" bigint NOT NULL,
-                          "last_location" point NOT NULL,
-                          "last_seen" timestamptz NOT NULL,
+                          "location" point NOT NULL,
+                          "spotting_timestamp" timestamptz NOT NULL,
                           "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
@@ -41,7 +41,5 @@ ALTER TABLE "sighting" ADD FOREIGN KEY ("image_id") REFERENCES "image" ("id");
 ALTER TABLE "sighting" ADD FOREIGN KEY ("reporter") REFERENCES "user" ("id");
 
 ALTER TABLE "animal" ADD CONSTRAINT unique_constraint_name UNIQUE (name, type, variant);
-
-CREATE EXTENSION IF NOT EXISTS postgis;
 
 INSERT INTO "user" (id, username,password,email) VALUES (0,'test','password','test@email.com');
