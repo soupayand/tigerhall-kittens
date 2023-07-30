@@ -29,7 +29,7 @@ CREATE TABLE "sighting" (
                           "animal_id" bigint NOT NULL,
                           "image_id" bigint,
                           "reporter" bigint NOT NULL,
-                          "last_location" geography NOT NULL,
+                          "last_location" point NOT NULL,
                           "last_seen" timestamptz NOT NULL,
                           "created_at" timestamptz NOT NULL DEFAULT (now())
 );
