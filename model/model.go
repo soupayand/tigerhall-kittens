@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"time"
 )
 
 type User struct {
@@ -41,14 +40,14 @@ type Point struct {
 
 type Sighting struct {
 	ID           int64  `json:"id,omitempty"`
-	Animal       Animal `json:"animal,omitempty"`
-	Image        Image
-	Reporter     User      `json:"reported,omitempty"`
-	LastLocation Point     `json:"last_location,omitempty"`
-	LastSeen     time.Time `json:"last_seen"`
+	Animal       Animal `json:"-"`
+	Image        Image  `json:"-"`
+	Reporter     User   `json:"-"`
+	LastLocation Point  `json:"last_location,omitempty"`
+	LastSeen     string `json:"last_seen"`
 }
 
-type CreateAnimalRequest struct {
+type AnimalSighting struct {
 	Animal
 	Sighting
 }
