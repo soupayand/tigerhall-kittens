@@ -43,3 +43,5 @@ ALTER TABLE "sighting" ADD FOREIGN KEY ("reporter") REFERENCES "user" ("id");
 ALTER TABLE "animal" ADD CONSTRAINT unique_constraint_name UNIQUE (name, type, variant);
 
 CREATE EXTENSION IF NOT EXISTS postgis;
+
+INSERT INTO "user" (id, username,password,email) VALUES (0,'test','password','test@email.com');
