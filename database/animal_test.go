@@ -39,14 +39,14 @@ func TestCreateAnimal(t *testing.T) {
 			ID: 0,
 		},
 	}
-	var createdAnimal *model.Animal
+	var createdAnimal *model.AnimalSighting
 
 	createdAnimal, err = animalDB.CreateAnimal(animal, sighting)
 	if err != nil {
 		t.Fatalf("Failed to create animal: %v", err)
 	}
 	defer func() {
-		if createdAnimal != nil && (*createdAnimal).ID != 0 {
+		if createdAnimal != nil && (*createdAnimal).Animal.ID != 0 {
 			_, err := pool.Exec(context.Background(), `DELETE FROM sighting WHERE id = $1`, sighting.ID)
 			if err != nil {
 				t.Errorf("Failed to delete test user: %v", err)
@@ -57,6 +57,6 @@ func TestCreateAnimal(t *testing.T) {
 			}
 		}
 	}()
-	assert.NotEmpty(t, createdAnimal.ID, "Animal ID should not be empty")
+	assert.NotEmpty(t, createdAnimal.Animal.ID, "Animal ID should not be empty")
 	assert.Equal(t, animal.Name, createdAnimal.Name, "Animal name mismatch")
 }
