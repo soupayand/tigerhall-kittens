@@ -1,0 +1,167 @@
+{
+	"info": {
+		"_postman_id": "ffcfe1d2-81c2-4816-99ce-a5cf9750831d",
+		"name": "Tigerhall-Kittens",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create User",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Create Animal",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6InNvdXBheWFuZCIsImVtYWlsX2lkIjoic291cGF5YW5kQGdtYWlsLmNvbSIsImV4cCI6MTY5MDcxMjI3NH0.4ioAtZsDakSN4-oxkLi-DFKcTcEHWP-Qdye_BjCmLJg",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Lion\",\n    \"type\": \"Mammal\",\n    \"variant\": \"African Lion\",\n    \"date_of_birth\": \"2018-05-15\",\n    \"description\": \"A majestic African lion.\",\n    \"last_location\": {\n        \"latitude\": 40.7128,\n        \"longitude\": -74.0060\n    },\n    \"last_seen\": \"2023-07-30T12:34:56Z\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:9001/animal",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"animal"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login User",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"\",\n    \"password\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:9001/user/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"user",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Animal",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Create Sighting",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJ1c2VybmFtZSI6ImRhdHRhc291cGF5YW4iLCJlbWFpbF9pZCI6ImRhdHRhc291cGF5YW5AZ21haWwuY29tIiwiZXhwIjoxNjkwODMxNDY4fQ.bfHEhi1fJlIMBRAKGaxn5IrMG6g-0o7jaUq4n3fdWnc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "image",
+							"type": "file",
+							"src": "/Users/soup/Desktop/6aofsvaglm_Medium_WW226365.jpeg"
+						},
+						{
+							"key": "animal_id",
+							"value": "1",
+							"type": "default"
+						},
+						{
+							"key": "latitude",
+							"value": "38.5",
+							"type": "default"
+						},
+						{
+							"key": "longitude",
+							"value": "-73.8399",
+							"type": "default"
+						},
+						{
+							"key": "spotting_timestamp",
+							"value": "2023-07-31T23:56:56Z",
+							"type": "default"
+						}
+					],
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:9001/sighting",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"sighting"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Sighting",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
