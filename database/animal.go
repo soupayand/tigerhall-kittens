@@ -74,11 +74,18 @@ func createAnimalWithTransaction(ctx context.Context, tx pgx.Tx, animal *model.A
 
 func CreateSightingWithTransaction(ctx context.Context, tx pgx.Tx, animalId int64, sighting *model.Sighting) error {
 	var id int64
+	imageId := sighting.Image.ID
+	var imageIDPtr *int64
+	if imageId == 0 {
+		imageIDPtr = nil // Set the pointer to nil if image_id is 0
+	} else {
+		imageIDPtr = &imageId // Set the pointer to the actual image_id value if it's not 0
+	}
 	err := tx.QueryRow(ctx,
 		`INSERT INTO sighting (animal_id, image_id, reporter, location, spotting_timestamp)
          VALUES($1, $2, $3, point($4, $5), $6) RETURNING id`,
 		animalId,
-		sighting.Image.ID,
+		imageIDPtr,
 		sighting.Reporter.ID,
 		sighting.Location.Longitude,
 		sighting.Location.Latitude,

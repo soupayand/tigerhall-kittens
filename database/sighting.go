@@ -16,7 +16,7 @@ const thresholdDistanceInKms = 5
 
 type ISighting interface {
 	CreateSighting(sighting *model.SightingReqResp) (*model.SightingReqResp, error)
-	ListSightingInfo(name string, animalType string, limit string, offset string) ([]model.SightingReqResp, error)
+	ListSightingInfo(animalId int64, limit string, offset string) ([]model.SightingReqResp, error)
 }
 
 type SightingDB struct {
@@ -134,7 +134,43 @@ func toRadians(deg float64) float64 {
 	return deg * (math.Pi / 180)
 }
 
-func (db *SightingDB) ListSightingInfo(name string, animalType string, limit string, offset string) ([]model.SightingReqResp, error) {
-	//TODO implement me
-	panic("implement me")
+func (db *SightingDB) ListSightingInfo(animalId int64, limit string, offset string) ([]model.SightingReqResp, error) {
+	sqlQuery := `
+		SELECT a.id, s.location[0] as longitude, s.location[1] as latitude, TO_CHAR(s.spotting_timestamp, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), i.filename, i.type, i.data
+		FROM animal a
+		JOIN sighting s ON a.id = s.animal_id
+		LEFT OUTER JOIN image i ON s.image_id = i.id
+	`
+	params := make([]interface{}, 0)
+	sqlQuery += " WHERE a.id = $1"
+	params = append(params, animalId)
+	sqlQuery += " ORDER BY s.spotting_timestamp DESC"
+	sqlQuery += " LIMIT $2 OFFSET $3"
+	params = append(params, limit, offset)
+	rows, err := db.pool.Query(context.Background(), sqlQuery, params...)
+	if err != nil {
+		logger.LogError(err)
+		return nil, err
+	}
+	defer rows.Close()
+	var responseArray []model.SightingReqResp
+	for rows.Next() {
+		var response model.SightingReqResp
+		err = rows.Scan(
+			&response.AnimalID,
+			&response.Sighting.Location.Longitude,
+			&response.Sighting.Location.Latitude,
+			&response.Sighting.SpottingTimestamp,
+			&response.Sighting.Image.FileName,
+			&response.Sighting.Image.Type,
+			&response.Sighting.Image.Data,
+		)
+		if err != nil {
+			logger.LogError(err)
+			return nil, err
+		}
+		responseArray = append(responseArray, response)
+	}
+	logger.LogInfo("Retrieved animal list info")
+	return responseArray, nil
 }

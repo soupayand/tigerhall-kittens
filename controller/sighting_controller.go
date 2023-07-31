@@ -28,19 +28,29 @@ func NewSightingController(s database.ISighting) *SightingController {
 func (sc *SightingController) SightingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		/*
-			queryParams := r.URL.Query()
-			name := queryParams.Get("name")
-			animalType := queryParams.Get("type")
-			limit := queryParams.Get("limit")
-			offset := queryParams.Get("offset")
-			if limit == "" || offset == "" {
-				errRes := ErrorResponse{Error: "limit or offset query parameter(s) missing"}
-				WriteJSONResponse(w, errRes, http.StatusBadRequest)
-				return
-			}
-			WriteJSONResponse(w, nil, http.StatusOK)
-		*/
+		queryParams := r.URL.Query()
+		animalId, err := strconv.ParseInt(queryParams.Get("animal_id"), 10, 64)
+		if animalId == 0 || err != nil {
+			errRes := ErrorResponse{Error: "animal_id is a mandatory query parameter and it should be of bigint value"}
+			WriteJSONResponse(w, errRes, http.StatusBadRequest)
+			return
+		}
+		limit := queryParams.Get("limit")
+		offset := queryParams.Get("offset")
+		if limit == "" || offset == "" {
+			errRes := ErrorResponse{Error: "limit and offset are mandatory query parameter(s)"}
+			WriteJSONResponse(w, errRes, http.StatusBadRequest)
+			return
+		}
+		sightings, err := sc.sighting.ListSightingInfo(animalId, limit, offset)
+		if err != nil {
+			logger.LogError(err)
+			errRes := ErrorResponse{Error: fmt.Sprintf("Failed to retrieve sightings: %v", err)}
+			WriteJSONResponse(w, errRes, http.StatusInternalServerError)
+			return
+		}
+		WriteJSONResponse(w, sightings, http.StatusOK)
+		return
 	case http.MethodPost:
 		err := r.ParseMultipartForm(10) // Max size of 10 MB for the image
 		if err != nil {
@@ -106,9 +116,11 @@ func (sc *SightingController) SightingHandler(w http.ResponseWriter, r *http.Req
 			return
 		}
 		WriteJSONResponse(w, createdAnimal, http.StatusCreated)
+		return
 	default:
 		errRes := ErrorResponse{Error: "Method not allowed"}
 		WriteJSONResponse(w, errRes, http.StatusMethodNotAllowed)
+		return
 	}
 
 }

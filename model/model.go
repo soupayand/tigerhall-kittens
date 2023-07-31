@@ -56,4 +56,5 @@ type AnimalReqResp struct {
 type SightingReqResp struct {
 	AnimalID int64 `json:"animal_id,omitempty"`
 	Sighting
+	Image
 }
