@@ -55,6 +55,6 @@ func TestCreateAnimal(t *testing.T) {
 			}
 		}
 	}()
-	assert.NotEmpty(t, createdAnimal.Animal.ID, "Animal ID should not be empty")
+	assert.NotEmpty(t, createdAnimal.AnimalID, "Animal ID should not be empty")
 	assert.Equal(t, animal.Name, createdAnimal.Name, "Animal name mismatch")
 }
