@@ -49,7 +49,7 @@ func (sc *SightingController) SightingHandler(w http.ResponseWriter, r *http.Req
 		createdAnimal, err := sc.sighting.CreateSighting(&sighting)
 		if err != nil {
 			logger.LogError(err)
-			errRes := ErrorResponse{Error: fmt.Sprintf("Failed to create animal : %v", err)}
+			errRes := ErrorResponse{Error: fmt.Sprintf("Failed to create sighting : %v", err)}
 			WriteJSONResponse(w, errRes, http.StatusInternalServerError)
 			return
 		}
