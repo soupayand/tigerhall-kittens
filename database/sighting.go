@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"math"
 	"tigerhall-kittens/logger"
@@ -45,6 +46,13 @@ func (db *SightingDB) CreateSighting(sightingReq *model.SightingReqResp) (*model
 		logger.LogError(err)
 		return nil, err
 	}
+	if err = createImageWithTransaction(ctx, tx, &sightingReq.Sighting.Image); err != nil {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return nil, err
+	}
 	if err = CreateSightingWithTransaction(ctx, tx, sightingReq.AnimalID, &sightingReq.Sighting); err != nil {
 		err := tx.Rollback(ctx)
 		if err != nil {
@@ -56,6 +64,21 @@ func (db *SightingDB) CreateSighting(sightingReq *model.SightingReqResp) (*model
 		return nil, fmt.Errorf("Failed to commit transaction")
 	}
 	return sightingReq, nil
+}
+
+func createImageWithTransaction(ctx context.Context, tx pgx.Tx, image *model.Image) error {
+	var id int64
+	err := tx.QueryRow(ctx,
+		`INSERT INTO image (filename, type, data)
+         VALUES($1, $2, $3) RETURNING id`,
+		image.FileName,
+		image.Type,
+		image.Data).Scan(&id)
+	if err != nil {
+		return err
+	}
+	image.ID = id
+	return nil
 }
 
 func (db *SightingDB) GetLastLocation(animalId int64) (*model.Point, error) {

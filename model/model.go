@@ -28,6 +28,7 @@ type Animal struct {
 }
 
 type Image struct {
+	ID       int64  `json:"id,omitempty"`
 	FileName string `json:"filename,omitempty"`
 	Type     string `json:"file_type,omitempty"`
 	Data     []byte `json:"image_data,omitempty"`

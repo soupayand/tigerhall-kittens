@@ -75,9 +75,10 @@ func createAnimalWithTransaction(ctx context.Context, tx pgx.Tx, animal *model.A
 func CreateSightingWithTransaction(ctx context.Context, tx pgx.Tx, animalId int64, sighting *model.Sighting) error {
 	var id int64
 	err := tx.QueryRow(ctx,
-		`INSERT INTO sighting (animal_id, reporter, location, spotting_timestamp)
-         VALUES($1, $2, point($3, $4), $5) RETURNING id`,
+		`INSERT INTO sighting (animal_id, image_id, reporter, location, spotting_timestamp)
+         VALUES($1, $2, $3, point($4, $5), $6) RETURNING id`,
 		animalId,
+		sighting.Image.ID,
 		sighting.Reporter.ID,
 		sighting.Location.Longitude,
 		sighting.Location.Latitude,
