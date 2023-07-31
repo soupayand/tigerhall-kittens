@@ -58,14 +58,6 @@ paths:
       responses:
         "200":
           description: successful operation
-          headers:
-            X-Expires-After:
-              description: date in UTC when token expires
-              style: simple
-              explode: false
-              schema:
-                type: string
-                format: date-time
           content:
             application/json:
               schema:
@@ -127,6 +119,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
+        "403":
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
     post:
       summary: Get user by user name
       operationId: createAnimal
@@ -142,6 +140,87 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Animal'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        "403":
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      security:
+      - BearerAuth: []
+  /sighting:
+    get:
+      summary: List of all sightings of an animal
+      operationId: getSightings
+      parameters:
+      - name: offset
+        in: query
+        description: Offset value for the page
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int32
+      - name: limit
+        in: query
+        description: The number of items per page.
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int32
+      - name: animalId
+        in: query
+        description: id of the animal
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: List of the animals sorted by last seen timestamp
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sighting'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        "403":
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+    post:
+      summary: Create a new sighting
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/sighting_body'
+        required: true
+      responses:
+        "200":
+          description: Successful created a new sighting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sighting'
         "400":
           description: Invalid request
           content:
@@ -178,6 +257,7 @@ components:
     Animal:
       required:
       - latitude
+      - location
       - longitude
       - name
       - seen
@@ -196,10 +276,22 @@ components:
         variant:
           type: string
           default: bengal tiger
-        seen:
+        date_of_birth:
+          type: string
+          description: Date of birth in YYYY-MM-DD format
+          format: date
+        location:
+          $ref: '#/components/schemas/Location'
+        spotting_timestamp:
           type: string
           format: date-time
           example: 2023-07-28T15:30:45Z
+    Location:
+      required:
+      - latitude
+      - longitude
+      type: object
+      properties:
         latitude:
           maximum: 90
           minimum: -90
@@ -210,6 +302,36 @@ components:
           minimum: -180
           type: number
           format: float
+    Image:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Auto generated
+          format: int64
+        filename:
+          type: string
+        image_data:
+          type: string
+          description: binary data encoded as base64
+          format: binary
+    Sighting:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Auto generated
+          format: int64
+        animal_id:
+          type: integer
+          format: int64
+        image:
+          $ref: '#/components/schemas/Image'
+        location:
+          $ref: '#/components/schemas/Location'
+        spotting_timestamp:
+          type: string
+          format: date-time
     ErrorMessage:
       type: object
       properties:
@@ -236,6 +358,24 @@ components:
       properties:
         token:
           type: string
+    sighting_body:
+      type: object
+      properties:
+        image:
+          type: string
+          description: binary data encoded to base64
+          format: binary
+        animal_id:
+          type: integer
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        spotting_timestamp:
+          type: string
+          format: date-time
   securitySchemes:
     BearerAuth:
       type: http
