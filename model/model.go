@@ -30,7 +30,7 @@ type Animal struct {
 type Image struct {
 	ID       int64  `json:"id,omitempty"`
 	FileName string `json:"filename,omitempty"`
-	Type     string `json:"file_type,omitempty"`
+	Type     string `json:"type,omitempty"`
 	Data     []byte `json:"image_data,omitempty"`
 }
 
@@ -42,7 +42,7 @@ type Point struct {
 type Sighting struct {
 	ID                int64  `json:"id,omitempty"`
 	Animal            Animal `json:"-"`
-	Image             Image  `json:"-"`
+	Image             Image  `json:"image,omitempty"`
 	Reporter          User   `json:"-"`
 	Location          Point  `json:"location,omitempty"`
 	SpottingTimestamp string `json:"spotting_timestamp"`
@@ -56,5 +56,4 @@ type AnimalReqResp struct {
 type SightingReqResp struct {
 	AnimalID int64 `json:"animal_id,omitempty"`
 	Sighting
-	Image
 }

@@ -1,8 +1,9 @@
-package main
+package worker
 
 import (
 	"context"
 	"fmt"
+	"github.com/IBM/sarama"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 	"net/http"
@@ -28,6 +29,23 @@ func main() {
 	}
 	defer pool.Close()
 
+	// Set up Kafka client configuration
+	config := sarama.NewConfig()
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Return.Successes = true
+	config.Producer.Return.Errors = true
+	kafkaBrokerConnString := os.Getenv("KAFKA")
+	producer, err := sarama.NewSyncProducer([]string{kafkaBrokerConnString}, config)
+	if err != nil {
+		logger.LogError(err)
+		return
+	}
+	defer func() {
+		if err := producer.Close(); err != nil {
+			logger.LogError(err)
+		}
+	}()
+
 	//DAO
 	user := database.NewUserDB(pool)
 	animal := database.NewAnimalDB(pool)
@@ -36,7 +54,7 @@ func main() {
 	//Controllers
 	userController := controller.NewUserController(user)
 	animalController := controller.NewAnimalController(animal)
-	sightingController := controller.NewSightingController(sighting)
+	sightingController := controller.NewSightingController(sighting, producer)
 	//Middlewares
 	jwtMiddleWare := middleware.JWTMiddleware
 

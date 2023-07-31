@@ -2,11 +2,13 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"math"
+	"strings"
 	"tigerhall-kittens/logger"
 	"tigerhall-kittens/model"
 )
@@ -17,6 +19,7 @@ const thresholdDistanceInKms = 5
 type ISighting interface {
 	CreateSighting(sighting *model.SightingReqResp) (*model.SightingReqResp, error)
 	ListSightingInfo(animalId int64, limit string, offset string) ([]model.SightingReqResp, error)
+	SpottedByEmailIds(animalId int64) (string, error)
 }
 
 type SightingDB struct {
@@ -156,21 +159,62 @@ func (db *SightingDB) ListSightingInfo(animalId int64, limit string, offset stri
 	var responseArray []model.SightingReqResp
 	for rows.Next() {
 		var response model.SightingReqResp
+		var nullFileName, nullType sql.NullString
 		err = rows.Scan(
 			&response.AnimalID,
 			&response.Sighting.Location.Longitude,
 			&response.Sighting.Location.Latitude,
 			&response.Sighting.SpottingTimestamp,
-			&response.Sighting.Image.FileName,
-			&response.Sighting.Image.Type,
+			&nullFileName,
+			&nullType,
 			&response.Sighting.Image.Data,
 		)
 		if err != nil {
 			logger.LogError(err)
 			return nil, err
 		}
+		if nullFileName.Valid {
+			response.Sighting.Image.FileName = nullFileName.String
+		} else {
+			response.Sighting.Image.FileName = ""
+		}
+		if nullType.Valid {
+			response.Sighting.Image.Type = nullType.String
+		} else {
+			response.Sighting.Image.Type = ""
+		}
 		responseArray = append(responseArray, response)
 	}
 	logger.LogInfo("Retrieved animal list info")
 	return responseArray, nil
+}
+
+func (db *SightingDB) SpottedByEmailIds(animalId int64) (string, error) {
+	sqlQuery := `
+		SELECT distinct u.email
+		FROM animal a
+		JOIN sighting s ON a.id = s.animal_id
+		JOIN "user" u ON s.reporter = u.id
+	`
+	params := make([]interface{}, 0)
+	sqlQuery += " WHERE a.id = $1"
+	params = append(params, animalId)
+	rows, err := db.pool.Query(context.Background(), sqlQuery, params...)
+	if err != nil {
+		logger.LogError(err)
+		return "", err
+	}
+	defer rows.Close()
+	var emailList []string
+	for rows.Next() {
+		var email string
+		err = rows.Scan(&email)
+		if err != nil {
+			logger.LogError(err)
+			return "", err
+		}
+		emailList = append(emailList, email)
+	}
+	logger.LogInfo("Retrieved email addresses of users who spotted the animal")
+	return strings.Join(emailList, ","), nil
 }

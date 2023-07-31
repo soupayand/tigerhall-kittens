@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"fmt"
+	"github.com/IBM/sarama"
 	"github.com/nfnt/resize"
 	"image"
 	"image/jpeg"
@@ -17,11 +18,13 @@ import (
 
 type SightingController struct {
 	sighting database.ISighting
+	producer sarama.SyncProducer
 }
 
-func NewSightingController(s database.ISighting) *SightingController {
+func NewSightingController(s database.ISighting, p sarama.SyncProducer) *SightingController {
 	return &SightingController{
 		sighting: s,
+		producer: p,
 	}
 }
 
@@ -108,21 +111,43 @@ func (sc *SightingController) SightingHandler(w http.ResponseWriter, r *http.Req
 		userID, _ := r.Context().Value("user_id").(int64)
 		sightingReq.Reporter.ID = userID
 		sightingReq.Image = i
-		createdAnimal, err := sc.sighting.CreateSighting(&sightingReq)
+		createdSighting, err := sc.sighting.CreateSighting(&sightingReq)
 		if err != nil {
 			logger.LogError(err)
 			errRes := ErrorResponse{Error: fmt.Sprintf("Failed to create sighting : %v", err)}
 			WriteJSONResponse(w, errRes, http.StatusInternalServerError)
 			return
 		}
-		WriteJSONResponse(w, createdAnimal, http.StatusCreated)
+		WriteJSONResponse(w, createdSighting, http.StatusCreated)
+		emailIds, err := sc.sighting.SpottedByEmailIds(animalIDInt)
+		if err != nil {
+			logger.LogError(err)
+		}
+		go dispatchEmailIntimation(emailIds, sc.producer)
 		return
 	default:
 		errRes := ErrorResponse{Error: "Method not allowed"}
 		WriteJSONResponse(w, errRes, http.StatusMethodNotAllowed)
 		return
 	}
+}
 
+func dispatchEmailIntimation(emailIds string, producer sarama.SyncProducer) {
+	topic := "email_animal_sighted"
+	message := emailIds
+
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.StringEncoder(message),
+	}
+
+	// Send the message
+	partition, offset, err := producer.SendMessage(msg)
+	if err != nil {
+		logger.LogError(err)
+	} else {
+		logger.LogInfo("Message sent successfully to partition", partition, "at offset", offset)
+	}
 }
 
 func resizeImage(imageFile io.Reader) ([]byte, error) {
