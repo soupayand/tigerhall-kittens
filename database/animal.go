@@ -99,14 +99,15 @@ func CreateSightingWithTransaction(ctx context.Context, tx pgx.Tx, animalId int6
 
 func (db *AnimalDB) ListAnimalInfo(name string, animalType string, limit string, offset string) ([]model.AnimalReqResp, error) {
 	sqlQuery := `
-		SELECT a.id, a.name, a.type, a.variant, TO_CHAR(a.date_of_birth, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), a.description, longitude, latitude, TO_CHAR(s.spotting_timestamp, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+		SELECT a.id AS animal_id, a.name, a.type, a.variant, TO_CHAR(a.date_of_birth, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS date_of_birth, a.description,
+       	s.location[0] AS longitude, s.location[1] AS latitude, TO_CHAR(s.spotting_timestamp, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS spotting_timestamp
 		FROM animal a
-		JOIN (
-			SELECT animal_id, location[0] as longitude,location[1] as latitude,MAX(spotting_timestamp) as spotting_timestamp
-			FROM sighting
-			GROUP BY animal_id, longitude, latitude
-		) s ON a.id = s.animal_id
-		WHERE 1=1
+		LEFT JOIN sighting s ON a.id = s.animal_id
+		WHERE s.spotting_timestamp = (
+  			SELECT MAX(spotting_timestamp)
+  			FROM sighting
+  			WHERE animal_id = a.id
+		)
 	`
 	params := make([]interface{}, 0)
 	if name != "" {
