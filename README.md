@@ -1,5 +1,5 @@
 **Setup** : 
-Run the setup.sh file
+Run the setup.sh file.
 MailTrap has been used as the SMTP client. Please provide the relevant values in the .env file else mails won't be sent out
 
 **Run** : 
