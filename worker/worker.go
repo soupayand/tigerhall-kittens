@@ -3,6 +3,7 @@ package worker
 import (
 	"github.com/IBM/sarama"
 	"gopkg.in/gomail.v2"
+	"os"
 	"strings"
 	"tigerhall-kittens/logger"
 )
@@ -64,7 +65,8 @@ func sendEmail(emailID string) error {
 	m.SetHeader("To", emailID)
 	m.SetHeader("Subject", "Animal Sighting Update")
 	m.SetBody("text/plain", "An animal you reported has been sighted again")
-
-	d := gomail.NewDialer("sandbox.smtp.mailtrap.io", 587, "$username", "$password") // Replace with your SMTP server and credentials
+	username := os.Getenv("MAILTRAP_USERNAME")
+	password := os.Getenv("MAILTRAP_PASSWORD")
+	d := gomail.NewDialer("sandbox.smtp.mailtrap.io", 587, username, password) // Replace with your SMTP server and credentials
 	return d.DialAndSend(m)
 }

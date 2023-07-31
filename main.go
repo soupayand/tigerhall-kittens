@@ -13,6 +13,7 @@ import (
 	"tigerhall-kittens/database"
 	"tigerhall-kittens/logger"
 	"tigerhall-kittens/middleware"
+	"tigerhall-kittens/worker"
 )
 
 func main() {
@@ -45,7 +46,8 @@ func main() {
 			logger.LogError(err)
 		}
 	}()
-
+	logger.LogInfo("Staring consumer.........................................")
+	go worker.StartConsumer()
 	//DAO
 	user := database.NewUserDB(pool)
 	animal := database.NewAnimalDB(pool)

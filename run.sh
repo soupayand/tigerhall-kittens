@@ -5,7 +5,6 @@
 function cleanup {
     echo "Stopping the server..."
     kill -15 $main_pid
-    kill -15 $worker_pid
     echo "Server stopped."
     exit 0
 }
@@ -16,19 +15,16 @@ trap cleanup SIGINT
 > info.log
 # Run the main.go and worker_main.go in the background and capture their PIDs
 go run main.go & main_pid=$!
-go run worker_main.go & worker_pid=$!
 
 # Echo the message after 5 seconds
 echo "Server is up and running"
 
 # Echo the PIDs for later use (e.g., stopping the processes)
 echo "Main PID: $main_pid"
-echo "Worker PID: $worker_pid"
 echo "Press control + c  to stop the server"
 
 # Wait for both background processes to finish
 wait $main_pid
-wait $worker_pid
 
 # The cleanup function will be automatically called on SIGINT (Ctrl+C)
 
